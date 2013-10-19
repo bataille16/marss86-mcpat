@@ -56,7 +56,7 @@ void init_power()
   {
       private_l2 = true;
       num_l2 = _num_cores;
-      as
+      assert(_uncore_LLC); // if we have more than one L2, then L3 is uncore 
 
   }
 
@@ -419,7 +419,6 @@ void translate_L1Cache_stats(Memory::Controller *IL1, Memory::Controller *DL1, s
 void translate_L2Cache_stats(Memory::Controller *L2,system_L2 *L2_stats)
 {
 
-   void(L2_stats); 
     L2_stats->read_accesses = L2->pow_l2_load_hits + L2->pow_l2_load_misses; 
     L2_stats->read_misses = L2->pow_l2_load_misses; 
     L2_stats->write_accesses = L2->pow_l2_store_hits + L2->pow_l2_store_misses; 
@@ -429,7 +428,25 @@ void translate_L2Cache_stats(Memory::Controller *L2,system_L2 *L2_stats)
 void translate_UncoreCache_stats(Memory::Controller *LLC, unsigned long sim_cycles, root_system * stats)
 {
    assert(_uncore_LLC);
-  
+   if (!private_l2)
+   {  
+ 
+      stats->L2[0].read_accesses = LLC->pow_l2_load_hits + LLC->pow_l2_load_misses;
+      stats->L2[0].read_misses =  LLC->pow_l2_load_misses;  
+      stats->L2[0].write_accesses = LLC->pow_l2_store_hits + LLC->pow_l2_store_misses;  
+      stats->L2[0].write_misses = LLC->pow_l2_store_misses;
+   }  
+   else{
+
+
+      stats->L3[0].read_accesses = LLC->pow_l3_load_hits + LLC->pow_l3_load_misses;
+      stats->L3[0].read_misses =  LLC->pow_l3_load_misses;  
+      stats->L3[0].write_accesses = LLC->pow_l3_store_hits + LLC->pow_l3_store_misses;  
+      stats->L3[0].write_misses = LLC->pow_l3_store_misses;
+
+  }
+
+
 
 
 }
