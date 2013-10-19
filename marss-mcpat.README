@@ -1,0 +1,7 @@
+10/10/2013
+<bataille16@gmail.com>
+Goal of the projec is to integrate marssx86 full system simulator with mcpat power modeling
+to dynamically calculate power consumption of simulated workloads
+Currently, the configuration parameters are hardcoded. The plan is to make the whole thing modular and easier to use. 
+
+Project needs mcpat library in order to work. 
