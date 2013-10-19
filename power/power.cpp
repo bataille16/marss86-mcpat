@@ -1,4 +1,5 @@
 #include "power.h"
+#include <stdio.h>
 #include <basecore.h>
 
 #include <ooo-const.h>
@@ -16,14 +17,14 @@ double *cores_rtp;
 double uncore_leakage; 
 
 
-
+FILE *pow_out_trace;
 
 
 //int testing = OOO_CORE_MODEL::FETCH_WIDTH;
 
 
 
-void init_power()
+void init_power(const char * filename)
 {
 
 
@@ -147,15 +148,12 @@ void init_power()
   if (cores_rtp == NULL)
     exit(-1); ;
 
-/*
-  core_knobs_t* knobs = cores[0]->knobs;
 
-  if (knobs->power.rtp_interval > 0)
-  {
-    assert(knobs->power.rtp_filename);
-    rtp_file = fopen(knobs->power.rtp_filename, "w");
-    if (rtp_file == NULL)
-      fatal("couldn't open rtp power file: %s", knobs->power.rtp_filename);
+  if (filename !=NULL)
+  {  
+      pow_out_trace = fopen(filename, "w"); 
+      if (pow_out_trace == NULL)
+        exit(-1); 
   }
 
 /*
@@ -338,7 +336,6 @@ void get_OoO_params(system_core *core_params, system_L2* L2_params)
 
 void translate_core_stats(Core::BaseCore *core, system_core * core_stats, unsigned long sim_cycles)
 {
-//  (void)L2_stats;
   core_stats->total_instructions = core->pow_total_uops; 
   core_stats->branch_instructions = core->pow_total_branches;
   core_stats->branch_mispredictions = core->pow_branch_mispredicts;  
@@ -427,8 +424,9 @@ void translate_L2Cache_stats(Memory::Controller *L2,system_L2 *L2_stats)
 
 void translate_UncoreCache_stats(Memory::Controller *LLC, unsigned long sim_cycles, root_system * stats)
 {
-   assert(_uncore_LLC);
-   if (!private_l2)
+   if (!_uncore_LLC)
+	return ; 
+   if (!private_l2)//FIXME: for all simulated platforms L3 is uncore and L2 is private
    {  
  
       stats->L2[0].read_accesses = LLC->pow_l2_load_hits + LLC->pow_l2_load_misses;
@@ -445,11 +443,39 @@ void translate_UncoreCache_stats(Memory::Controller *LLC, unsigned long sim_cycl
       stats->L3[0].write_misses = LLC->pow_l3_store_misses;
 
   }
-
-
+ // hack 
+     stats->total_cycles  = double(double(_uncore_freq)/double(_cpu_clock_rate)) * (double)sim_cycles; 
 
 
 }
+
+
+
+void getcore_stats(int coreid, Core::BaseCore *core, Memory::Controller * IL1, Memory::Controller * DL1, Memory::Controller *L2,unsigned long sim_cycles)
+{   
+
+//	translate_core_stats(Core::BaseCore *core, system_core * core_stats, unsigned long sim_cycles);
+	if (_num_cores > 1 && _uncore_LLC)//in multicore platforms all L2 are shared
+	{
+		assert(private_l2 & (_num_cores == _num_l2_caches));
+		translate_core_stats(core, &XML->sys.core[coreid], sim_cycles);
+		//void translate_L1Cache_stats(Memory::Controller *IL1, Memory::Controller *DL1, system_core *core_stats);
+		translate_L1Cache_stats(IL1, DL1, &XML->sys.core[coreid]);
+		//void translate_L2Cache_stats(Memory::Controller *L2,system_L2 *L2_stats);
+		translate_L2Cache_stats(L2,&XML->sys.L2[coreid]); 
+	} 
+
+	else
+	{
+		assert(coreid = 0);
+		translate_core_stats(core, &XML->sys.core[coreid],sim_cycles);
+		translate_L1Cache_stats(IL1, DL1, &XML->sys.core[coreid]);
+		// FIXME mechanism to make sure that single core has L2 is not uncore
+		translate_L2Cache_stats(L2, &XML->sys.L2[coreid]);
+	}
+
+}
+
 
 int calc_core_power(Core::BaseCore *core, bool print_power)
 {
@@ -458,7 +484,7 @@ int calc_core_power(Core::BaseCore *core, bool print_power)
 }
 int test_main()
 {
-	init_power();
+	init_power(NULL);
 	return   XML->sys.number_of_cores = _num_cores;
  
 

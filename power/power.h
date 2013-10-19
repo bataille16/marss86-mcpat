@@ -59,12 +59,12 @@ static short _llc_write_policy = 1; /* 0 -> write-through  1 -> write_back */
 static int _uncore_freq = 800 ; /* MHZ */
 
 
-static const char * CacheType[4] = {"L1_I_","L1_D_","L2_","L3_"};// hardwire since we cant get the type from the controller class.
+//static const char * CacheType[4] = {"L1_I_","L1_D_","L2_","L3_"};// hardwire since we cant get the type from the controller class.
 							  // Alternative is to add the type to the controller. not necessary
 
 
  
-void init_power();
+void init_power(const char *filename);
 void kill_power();
 int calc_core_power(Core::BaseCore *core, bool print_power);
 void translate_params(system_core *core_params, system_L2 * L2_params); 
@@ -77,6 +77,7 @@ void translate_L1Cache_stats(Memory::Controller *IL1, Memory::Controller *DL1, s
 void translate_L2Cache_stats(Memory::Controller *L2,system_L2 *L2_stats);
 void translate_UncoreCache_stats(Memory::Controller *LLC, unsigned long sim_cycles, root_system * stats); 
 
+void getcore_stats(int coreid, Core::BaseCore *core, Memory::Controller * IL1, Memory::Controller * DL1, Memory::Controller *L2,unsigned long sim_cycles); 
 int test_main();
 
 struct core_power_t
