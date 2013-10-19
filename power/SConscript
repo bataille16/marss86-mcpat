@@ -1,0 +1,25 @@
+#<bataille16@gmail.com> 10/12/2013
+#SConscript for power 
+
+# Import envrionment
+Import('env')
+
+###################################
+# Cache related autogeneration
+#
+
+env.Append(CPPPATH = '/home/prism/marss.dramsim/ptlsim/mcpat')
+env.Append(LIBPATH = '/home/prism/marss.dramsim/ptlsim/lib/power/')
+env.Append(LIBS= 'mcpat')
+
+#env.Append(CPPPAT = '/home/prism/mcpat/cacti/')
+#env.Append(CPPPATH= '/home/prism/marss.dramsim/mcpat/cacti/')
+#env.Append(LIBPATH= '/home/prism/marss.dramsim/ptlsim/lib/power/')
+#env.Append(LIBS= 'mcpat')
+# Now get list of .cpp files
+src_files = Glob('*.cpp')
+
+objs = env.Object(src_files)
+
+Return('objs')
+
