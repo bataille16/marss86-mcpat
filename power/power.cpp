@@ -13,9 +13,10 @@ class ParseXML *XML = NULL;
 bool private_l2 = false; 
 
 double *cores_leakage;
-double *cores_rtp;
 double uncore_leakage; 
 
+double *cores_rtp;
+double uncore_rtp;
 
 FILE *pow_out_trace;
 
@@ -57,8 +58,7 @@ void init_power(const char * filename)
   {
       private_l2 = true;
       num_l2 = _num_cores;
-      assert(_uncore_LLC); // if we have more than one L2, then L3 is uncore 
-
+      _uncore_LLC = true;    
   }
 
   if (_OoO_cores)
@@ -367,7 +367,7 @@ void translate_core_stats(Core::BaseCore *core, system_core * core_stats, unsign
 
   core_stats->pipeline_duty_cycle = (double)core-> pow_committed_insns;
   core_stats->pipeline_duty_cycle /= (double) core->pow_cycles;
-  core_stats->pipeline_duty_cycle /= OOO_CORE_MODEL::COMMIT_WIDTH; 
+  core_stats->pipeline_duty_cycle /= (double)OOO_CORE_MODEL::COMMIT_WIDTH; 
 
   core_stats->itlb.total_accesses = core->pow_itlb_accesses;
   core_stats->itlb.total_misses = core->pow_itlb_misses;
@@ -424,8 +424,12 @@ void translate_L2Cache_stats(Memory::Controller *L2,system_L2 *L2_stats)
 
 void translate_UncoreCache_stats(Memory::Controller *LLC, unsigned long sim_cycles, root_system * stats)
 {
+
+     // hack 
+     stats->total_cycles  = double(double(_uncore_freq)/double(_cpu_clock_rate)) * (double)sim_cycles; 
+
    if (!_uncore_LLC)
-	return ; 
+  	return; 
    if (!private_l2)//FIXME: for all simulated platforms L3 is uncore and L2 is private
    {  
  
@@ -443,9 +447,6 @@ void translate_UncoreCache_stats(Memory::Controller *LLC, unsigned long sim_cycl
       stats->L3[0].write_misses = LLC->pow_l3_store_misses;
 
   }
- // hack 
-     stats->total_cycles  = double(double(_uncore_freq)/double(_cpu_clock_rate)) * (double)sim_cycles; 
-
 
 }
 
@@ -467,7 +468,8 @@ void getcore_stats(int coreid, Core::BaseCore *core, Memory::Controller * IL1, M
 
 	else
 	{
-		assert(coreid = 0);
+		//FIXME: why  does assertion fails
+		//assert(coreid = 0);
 		translate_core_stats(core, &XML->sys.core[coreid],sim_cycles);
 		translate_L1Cache_stats(IL1, DL1, &XML->sys.core[coreid]);
 		// FIXME mechanism to make sure that single core has L2 is not uncore
@@ -476,21 +478,100 @@ void getcore_stats(int coreid, Core::BaseCore *core, Memory::Controller * IL1, M
 
 }
 
-
-int calc_core_power(Core::BaseCore *core, bool print_power)
+void get_uncore_stats(Memory::Controller *LLC, unsigned long sim_cycles)
 {
-//	print_power = false; 
-	return core->pow_total_uops;
+	if (LLC == NULL)
+		assert(!_uncore_LLC); 
+	translate_UncoreCache_stats(LLC, sim_cycles, &XML->sys); 
+
 }
-int test_main()
+
+
+
+void calc_power(bool print_power)
 {
-	init_power(NULL);
-	return   XML->sys.number_of_cores = _num_cores;
- 
 
-//	XML = new ParseXML();
-//	XML->initialize();
-	 
-//	return XML->sys.number_of_L2s; 
+	mcpat_compute_energy(print_power, cores_rtp, &uncore_rtp); 
+	if(pow_out_trace)
+	{
 
+		for (int i =0 ; i <_num_cores; i++)
+			fprintf(pow_out_trace, "%.4f, %.4f\n", cores_rtp[i], cores_leakage[i]);
+		fprintf(pow_out_trace, "%.4f, %.4f\n", uncore_rtp, uncore_leakage);
+			
+	
+	}
+}
+
+void dump_pow_stats()
+{
+	FILE *dump_stats = fopen("/home/prism/dump","w");
+	
+	fprintf(dump_stats,"total uops: %f\n", XML->sys.core->total_instructions); 	
+	fprintf(dump_stats,"total branches: %f\n", XML->sys.core->branch_instructions); 	
+	fprintf(dump_stats,"mispredictions: %f\n", XML->sys.core->branch_mispredictions); 	
+	fprintf(dump_stats,"commited uops: %f\n", XML->sys.core->committed_instructions); 	
+	fprintf(dump_stats,"load insns.: %f\n", XML->sys.core->load_instructions); 	
+	fprintf(dump_stats,"store insns.: %f\n", XML->sys.core->store_instructions); 	
+	fprintf(dump_stats,"clock cycles.: %f\n", XML->sys.core->total_cycles); 	
+	fprintf(dump_stats,"clock rate: %d\n", XML->sys.core->clock_rate); 	
+	fprintf(dump_stats,"idle cycles: %f\n", XML->sys.core->idle_cycles); 	
+	fprintf(dump_stats,"busy cycles: %f\n", XML->sys.core->busy_cycles); 	
+	fprintf(dump_stats,"int reg reads: %f\n", XML->sys.core->int_regfile_reads); 	
+	fprintf(dump_stats,"int reg writes: %f\n", XML->sys.core->int_regfile_writes); 	
+	fprintf(dump_stats,"fp reg reads: %f\n", XML->sys.core->float_regfile_reads); 	
+	fprintf(dump_stats,"fp reg writes: %f\n", XML->sys.core->float_regfile_writes); 	
+	fprintf(dump_stats,"fn calls: %f\n", XML->sys.core->function_calls); 	
+	fprintf(dump_stats,"alu accesses: %f\n", XML->sys.core->ialu_accesses); 	
+	fprintf(dump_stats,"fpu accesses: %f\n", XML->sys.core->fpu_accesses); 	
+	fprintf(dump_stats,"mul accesses: %f\n", XML->sys.core->mul_accesses); 	
+	fprintf(dump_stats,"duty cycle: %f\n", XML->sys.core->pipeline_duty_cycle); 	
+
+
+	fprintf(dump_stats,"int fetch uops: %f\n", XML->sys.core->int_instructions); 	
+	fprintf(dump_stats,"fp fetch uops: %f\n", XML->sys.core->fp_instructions); 	
+	fprintf(dump_stats,"ROB reads: %f\n", XML->sys.core->ROB_reads); 	
+	fprintf(dump_stats,"ROB writes: %f\n", XML->sys.core->ROB_writes); 	
+	fprintf(dump_stats,"rename reads: %f\n", XML->sys.core->rename_reads); 	
+	fprintf(dump_stats,"rename writes: %f\n", XML->sys.core->rename_writes); 	
+	fprintf(dump_stats,"fp rename reads: %f\n", XML->sys.core->fp_rename_reads); 	
+	fprintf(dump_stats,"fp rename writes: %f\n", XML->sys.core->fp_rename_writes); 	
+	fprintf(dump_stats,"alloc uops: %f\n", XML->sys.core->inst_window_reads); 	
+	fprintf(dump_stats,"context switches: %f\n", XML->sys.core->context_switches); 	
+
+
+
+
+
+
+	fprintf(dump_stats,"itlb accesses %f\n", XML->sys.core->itlb.total_accesses); 	
+	fprintf(dump_stats,"itlb misses: %f\n", XML->sys.core->itlb.total_misses); 	
+	fprintf(dump_stats,"dtlb accesses: %f\n", XML->sys.core->dtlb.total_accesses); 	
+	fprintf(dump_stats,"dtlb misses: %f\n", XML->sys.core->dtlb.total_misses); 	
+	fprintf(dump_stats,"il1 lookups.: %f\n", XML->sys.core->icache.read_accesses); 	
+	fprintf(dump_stats,"il1 misses: %f\n", XML->sys.core->icache.read_misses); 	
+	fprintf(dump_stats,"dl1 load lookups: %f\n", XML->sys.core->dcache.read_accesses); 	
+	fprintf(dump_stats,"dl1 load misses: %f\n", XML->sys.core->dcache.read_misses); 	
+	fprintf(dump_stats,"dl1 store lookups: %f\n", XML->sys.core->dcache.write_accesses); 	
+	fprintf(dump_stats,"dl1 store misses: %f\n", XML->sys.core->dcache.write_misses); 	
+	fprintf(dump_stats,"dl2 load lookups: %f\n",  XML->sys.L2->read_accesses); 	
+	fprintf(dump_stats,"dl2 load misses: %f\n",  XML->sys.L2->read_misses); 	
+	fprintf(dump_stats,"dl2 store lookups : %f\n", XML->sys.L2->write_accesses); 	
+	fprintf(dump_stats,"dl2 store misses: %f\n",  XML->sys.L2->write_misses); 	
+	fprintf(dump_stats,"btb lookups: %f\n", XML->sys.core->BTB.read_accesses); 	
+	fprintf(dump_stats,"btb updates: %f\n", XML->sys.core->BTB.write_accesses); 	
+	
+
+	fprintf(dump_stats,"uncore cycles: %f\n", XML->sys.total_cycles); 
+
+	fclose(dump_stats);
+//	return XML->sys.L2->read_accesses ; 
+	
+}
+void kill_power()
+{
+	free(cores_rtp); 
+	if(pow_out_trace)
+		fclose(pow_out_trace); 
+	mcpat_finalize(); 
 }

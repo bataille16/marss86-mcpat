@@ -66,7 +66,7 @@ static int _uncore_freq = 800 ; /* MHZ */
  
 void init_power(const char *filename);
 void kill_power();
-int calc_core_power(Core::BaseCore *core, bool print_power);
+void calc_power(bool print_power);
 void translate_params(system_core *core_params, system_L2 * L2_params); 
 void get_OoO_params(system_core *core_params, system_L2* L2_params);// add out of order core parameters
 void get_IO_params(system_core *core_params, system_L2* L2_params);// add in order core parameters
@@ -78,8 +78,9 @@ void translate_L2Cache_stats(Memory::Controller *L2,system_L2 *L2_stats);
 void translate_UncoreCache_stats(Memory::Controller *LLC, unsigned long sim_cycles, root_system * stats); 
 
 void getcore_stats(int coreid, Core::BaseCore *core, Memory::Controller * IL1, Memory::Controller * DL1, Memory::Controller *L2,unsigned long sim_cycles); 
-int test_main();
+void get_uncore_stats(Memory::Controller *LLC, unsigned long sim_cycles); 
 
+void  dump_pow_stats();
 struct core_power_t
 {
 	double rt_power; 
