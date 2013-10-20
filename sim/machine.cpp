@@ -140,6 +140,10 @@ bool BaseMachine::init(PTLsimConfig& config)
     //bataille16.. initialize power model
     unsigned long  get_test = test_main(); 
     ptl_logfile <<"Backer logging test ", get_test, endl,flush;
+
+      
+
+
      return 1;
 }
 
@@ -270,11 +274,47 @@ int BaseMachine::run(PTLsimConfig& config)
 
         sim_cycle++;
         iterations++;
+      
 
-        if unlikely (config.stop_at_insns <= total_insns_committed ||
+	        if unlikely (config.stop_at_insns <= total_insns_committed ||
                 config.stop_at_cycle <= sim_cycle) {
             ptl_logfile << "Stopping simulation loop at specified limits (", sim_cycle, " cycles, ", total_insns_committed, " commits)", endl;
-            exiting = 1;
+	 //dirty way of doing things
+	// get core stats every 10M cycles
+
+       foreach(i, cores.count())
+       {
+		Controller *il1, *dl1, *l2; 
+		foreach(j, controllers.count())
+		{
+			if (controllers[j]->idx == i && strstr(controllers[j]->pow_name, "L1_I_"))
+				il1 = controllers[j];
+				
+			if (controllers[j]->idx == i && strstr(controllers[j]->pow_name, "L1_D_"))	
+				dl1 = controllers[j];
+			
+			if (controllers[j]->idx == i && strstr(controllers[j]->pow_name, "L2_"))	
+				l2 = controllers[j];
+		}	
+		// by now all caches for core i have been found.. insert function that gets stats for each core
+		getcore_stats(i, cores[i], il1, dl1, l2, sim_cycle);
+	}
+	//get uncore stat
+	Controller *l3 = NULL; 
+	if (_uncore_LLC)
+	{
+		foreach(i, controllers.count())
+		{
+			if(strstr(controllers[i]->pow_name,"L3_"))
+				l3 = controllers[i];
+		}
+	
+	}   
+	get_uncore_stats(l3, sim_cycle); 
+	calc_power(false);  
+	dump_pow_stats();	
+
+       exiting = 1;
             break;
         }
         if unlikely (exiting) {
