@@ -270,7 +270,7 @@ int BaseMachine::run(PTLsimConfig& config)
 		}
 
         sim_cycle++;
-	if (sim_cycle%100000 == 0)
+	if (sim_cycle%1000000000 == 0)
 	{
 		// a little dirty way of doing things
 	       foreach(i, cores.count())
