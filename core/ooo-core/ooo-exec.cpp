@@ -435,7 +435,7 @@ int ReorderBufferEntry::issue() {
 		core.pow_total_loads++; 
 	if(opclassof(uop.opcode) == 12)
 		core.pow_total_stores++; 
-	if(opclassof(uop.opcode) >= 1 || opclassof(uop.opcode) <=3)
+	if(opclassof(uop.opcode) >= 1 && opclassof(uop.opcode) <=3)
 		core.pow_alu_accesses++; 
 	if(opclassof(uop.opcode) == 16)
 		core.pow_mul_accesses++; 
