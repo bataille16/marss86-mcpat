@@ -675,6 +675,7 @@ bool CacheController::cache_access_cb(void *arg)
 							pow_dl1_load_misses++;  
 						if(type_ == L2_CACHE)
 							pow_l2_load_misses++;	
+				
 						if(type_ == L3_CACHE)
 							pow_l3_load_misses++;  
 						

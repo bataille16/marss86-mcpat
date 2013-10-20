@@ -85,26 +85,27 @@ class Controller
 
         public:
 
-	unsigned long pow_il1_hits; 
-	unsigned long pow_il1_misses ; 
-	unsigned long pow_dl1_load_hits; 
-	unsigned long  pow_dl1_load_misses; 
-	unsigned long  pow_dl1_store_hits ;
-	unsigned long  pow_dl1_store_misses; 
-	unsigned long  pow_l2_load_hits ;
-	unsigned long  pow_l2_load_misses ;
-	unsigned long  pow_l2_store_hits ;
-	unsigned long  pow_l2_store_misses;
+		unsigned long pow_il1_hits; 
+		unsigned long pow_il1_misses ; 
+		unsigned long pow_dl1_load_hits; 
+		unsigned long  pow_dl1_load_misses; 
+		unsigned long  pow_dl1_store_hits ;
+		unsigned long  pow_dl1_store_misses; 
+		unsigned long  pow_l2_load_hits ;
+		unsigned long  pow_l2_load_misses ;
+		unsigned long  pow_l2_store_hits ;
+		unsigned long  pow_l2_store_misses;
 	
-	unsigned long  pow_l3_load_hits;
-	unsigned long  pow_l3_load_misses; 
-	unsigned long  pow_l3_store_hits ;
-	unsigned long  pow_l3_store_misses;
-
+		unsigned long  pow_l3_load_hits;
+		unsigned long  pow_l3_load_misses; 
+		unsigned long  pow_l3_store_hits ;
+		unsigned long  pow_l3_store_misses;
 	
-
+	
+	 
                 MemoryHierarchy *memoryHierarchy_;
                 W8 idx;
+ 		 char pow_name[10];
 
                 Controller(W8 coreid, const char *name,
                                 MemoryHierarchy *memoryHierarchy)
@@ -114,10 +115,30 @@ class Controller
                 {
                         name_ << name;
                         isPrivate_ = false;
-
+			strcpy(pow_name, name); 	
                         handle_interconnect_.connect(signal_mem_ptr \
                                         (*this, &Controller::handle_interconnect_cb));
                 }
+	void reset_pow_stats()
+	{
+		pow_il1_hits = 0;
+		 pow_il1_misses = 0; 
+
+		 pow_dl1_load_hits = 0; 
+		 pow_dl1_load_misses = 0 ; 
+		 pow_dl1_store_hits = 0 ; 
+		 pow_dl1_store_misses  =0 ; 
+		 pow_l2_load_hits = 0 ; 
+		 pow_l2_load_misses =0 ; 
+		 pow_l2_store_hits =0 ; 
+		 pow_l2_store_misses =0 ; 
+	
+		 pow_l3_load_hits =0 ; 
+		 pow_l3_load_misses =0 ; 
+		 pow_l3_store_hits =0 ; 
+		 pow_l3_store_misses = 0; 
+	}		
+
 
         virtual ~Controller()
         {
